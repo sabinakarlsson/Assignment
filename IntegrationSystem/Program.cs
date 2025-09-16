@@ -59,10 +59,42 @@ namespace IntegrationSystem
 
                 foreach (var order in orders)
                 {
-                    _modbusClient.WriteSingleRegister(0, order.Id);
-                    Console.WriteLine($"Order {order.Id} skickad till OT-systemet!");
+                    try
+                    {
+                        if (!_modbusClient.Connected)
+                        {
+                            _modbusClient.Connect();
 
-                    order.SentToOT = true;
+                            _modbusClient.WriteSingleRegister(0, order.Id);
+                            Console.WriteLine($"Order {order.Id} skickad till OT-systemet!");
+
+                            bool confirmed = false;
+
+                            while (!confirmed)
+                            {
+                                Thread.Sleep(1000); // Väntar 1 sekund innan nästa kontroll
+                                int[] response = _modbusClient.ReadHoldingRegisters(1, 1);
+                                int confirmedOrderId = response[0];
+
+                                if (confirmedOrderId == order.Id)
+                                {
+                                    Console.WriteLine($"Order {order.Id} bekräftad av OT-systemet.");
+                                    order.SentToOT = true;
+                                    confirmed = true;
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Väntar på bekräftelse för order {order.Id}...");
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Kunde inte ansluta till Modbus-servern: {ex.Message}");
+                        continue; // Hoppa över denna order och försök igen senare
+                    }
+
                 }
 
                 _db.SaveChanges();

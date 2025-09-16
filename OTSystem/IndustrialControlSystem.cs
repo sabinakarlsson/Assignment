@@ -12,6 +12,7 @@ namespace OTSystem
 
         private static bool messageReceived = false;
         private static int lastOrderId = -1;
+        private static ModbusServer modbusServer;
 
         public void Run()
         {
@@ -28,6 +29,8 @@ namespace OTSystem
                     Console.WriteLine($"Robotarmen plockar order {lastOrderId}...");
                     Thread.Sleep(2000); // Simulera plockning
                     Console.WriteLine($"Order {lastOrderId} har blivit packad!");
+
+                    modbusServer.holdingRegisters[1] = (short)lastOrderId; // Skriv tillbaka orderId till register 1 som bekräftelse
                     messageReceived = false;
 
                 }
@@ -40,7 +43,7 @@ namespace OTSystem
             int port = 502;
 
             ModbusServer modbusServer = new ModbusServer();
-            modbusServer.Port = port; // Set the port number
+            modbusServer.Port = port; // sätter portnumret
 
             modbusServer.HoldingRegistersChanged += (startAddress, numberOfRegisters) =>
             {
