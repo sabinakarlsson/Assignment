@@ -1,5 +1,6 @@
 ﻿using ITSystem.Data;
 using ITSystem.Repositories.Interface;
+using System.Text.RegularExpressions;
 using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -65,9 +66,10 @@ namespace ITSystem
                 while (true)
                 {
                     Console.Write("Lösenord: ");
-                    password = Console.ReadLine();
-                    if (!string.IsNullOrWhiteSpace(password)) break;
-                    Console.WriteLine("Lösenord får inte vara tomt");
+                    password = ReadPassword();
+                    if (ValidatePassword(password, out var error)) break;
+                    
+                    Console.WriteLine(error);
                 }
 
                 var admin = new User
@@ -291,6 +293,22 @@ namespace ITSystem
             while (key.Key != ConsoleKey.Enter);
             Console.WriteLine();
             return password.ToString();
+        }
+
+        private bool ValidatePassword(string password, out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            var pattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{10,}$";
+
+            if (!Regex.IsMatch(password, pattern))
+            {
+                errorMessage = "Lösenordet måste vara minst 10 tecken långt och innehålla minst en stor bokstav, en liten bokstav och ett specialtecken.";
+                return false;
+            }
+
+            return true;
+
         }
     }
 }
