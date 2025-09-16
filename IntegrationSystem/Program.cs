@@ -37,7 +37,7 @@ namespace IntegrationSystem
         }
     }
 
-    public class IntegrationService //DI av ModbusClient och DbContext + kan loopa i databasen (inte enbart orderId) + sparari databasen att ordern är skickad
+    public class IntegrationService //DI av ModbusClient och DbContext + kan loopa i databasen (inte enbart orderId) + sparar i databasen att ordern är skickad
     {
         private readonly ShopDbContext _db;
         private readonly ModbusClient _modbusClient;
