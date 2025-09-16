@@ -39,6 +39,7 @@ namespace ITSystem
                         options.UseSqlServer(context.Configuration.GetConnectionString("DefaultConnection")));
                     services.AddScoped<IOrderRepository, OrderRepository>();
                     services.AddScoped<IProductRepository, ProductRepository>();
+                    services.AddScoped<IUserRepository, UserRepository>();
                     services.AddScoped<ShopApp>();
                 });
     }

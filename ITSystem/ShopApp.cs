@@ -1,5 +1,6 @@
 ﻿using ITSystem.Data;
 using ITSystem.Repositories.Interface;
+using BCrypt.Net;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -13,11 +14,15 @@ namespace ITSystem
     {
         private readonly IOrderRepository orderRepository;
         private readonly IProductRepository productRepository;
+        private readonly IUserRepository userRepository;
 
-        public ShopApp(IOrderRepository orderRepository, IProductRepository productRepository)
+        private User? loggedInUser;
+
+        public ShopApp(IOrderRepository orderRepository, IProductRepository productRepository, IUserRepository userRepository)
         {
             this.orderRepository = orderRepository;
             this.productRepository = productRepository;
+            this.userRepository = userRepository;
         }
 
         internal async Task InitAsync() //säkerställa att databasen är skapad, om är skapad (men inga produkter) så skapa dessa produkter
@@ -42,11 +47,50 @@ namespace ITSystem
 
                 await productRepository.AddRangeAsync(products);
             }
+
+            var users = await userRepository.GetAllUsersAsync();
+            if (!users.Any())
+            {
+                Console.WriteLine("Skapa adminanvändare!");
+                string username;
+                while (true)
+                {
+                    Console.Write("Användarnamn ");
+                    username = Console.ReadLine();
+                    if (!string.IsNullOrWhiteSpace(username)) break;
+                    Console.WriteLine("Användarnamn får inte vara tomt");
+                }
+
+                string password;
+                while (true)
+                {
+                    Console.Write("Lösenord: ");
+                    password = Console.ReadLine();
+                    if (!string.IsNullOrWhiteSpace(password)) break;
+                    Console.WriteLine("Lösenord får inte vara tomt");
+                }
+
+                var admin = new User
+                {
+                    Username = username,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                    IsAdmin = true
+                };
+
+                await userRepository.AddUserAsync(admin);
+                Console.WriteLine("Adminanvändare skapad. Tryck på valfri tangent för att fortsätta.");
+                Console.ReadKey();
+
+            }
         }
 
 
         internal async Task RunMenuAsync()
         {
+
+            await LoginAsyncLoop();
+
+
             while (true)
             {
                 Console.Clear();
@@ -186,6 +230,67 @@ namespace ITSystem
 
                 }
             }
+        }
+
+
+        internal async Task<User> LoginAsyncLoop()
+        {
+            while (loggedInUser == null)
+            {
+                loggedInUser = await LogInAsync();
+            }
+
+            Console.WriteLine($"Välkommen, {loggedInUser.Username}!");
+            Thread.Sleep(1000);
+
+            return loggedInUser;
+        }
+
+        private async Task<User?> LogInAsync()
+        {
+            Console.Clear();
+            Console.WriteLine("--- Inloggning ---");
+
+            Console.Write("Ange användarnamn: ");
+            var username = Console.ReadLine();
+
+            Console.Write("Ange lösenord: ");
+            var password = ReadPassword();
+
+            var user = await userRepository.GetUserByUsernameAsync(username);
+
+            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            {
+                Console.WriteLine("Ogiltigt användarnamn eller lösenord.");
+                Thread.Sleep(1500);
+                return null;
+            }
+
+            return user;
+        }
+
+        private string ReadPassword()
+        {
+            var password = new StringBuilder();
+            ConsoleKeyInfo key;
+            do
+            {
+                key = Console.ReadKey(true);
+                if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+                {
+                    password.Append(key.KeyChar);
+                    Console.Write("*");
+                }
+                else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+                {
+                    password.Remove(password.Length - 1, 1);
+                    Console.Write("\b \b");
+                }
+            }
+
+            while (key.Key != ConsoleKey.Enter);
+            Console.WriteLine();
+            return password.ToString();
         }
     }
 }
