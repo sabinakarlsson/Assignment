@@ -40,6 +40,7 @@ namespace ITSystem
                     services.AddScoped<IOrderRepository, OrderRepository>();
                     services.AddScoped<IProductRepository, ProductRepository>();
                     services.AddScoped<IUserRepository, UserRepository>();
+                    services.AddScoped<IIncidentRepository, IncidentRepository>();
                     services.AddScoped<ShopApp>();
                 });
     }

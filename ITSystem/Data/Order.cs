@@ -9,9 +9,9 @@ namespace ITSystem.Data
     public class Order
     {
         public int Id { get; set; }
-        public int CustomerId { get; set; }
-        public string CompanyName { get; set; }
-        public DateTime OrderDate { get; set; }
+        public string CompanyId { get; set; } = null!;
+        public string CompanyName { get; set; } = null!;
+        public DateTime OrderDate { get; set; } 
         public decimal TotalAmount { get; set; }
         public bool SentToOT { get; set; } = false;
     }
