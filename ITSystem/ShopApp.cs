@@ -84,7 +84,7 @@ namespace ITSystem
                 };
 
                 await userRepository.AddUserAsync(admin);
-                Console.WriteLine("Adminanvändare skapad. Tryck på valfri tangent för att fortsätta.");
+                Console.WriteLine("Admin skapad. Tryck på valfri tangent för att fortsätta.");
                 Console.ReadKey();
 
             }
