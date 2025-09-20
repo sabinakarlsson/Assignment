@@ -29,10 +29,7 @@ namespace OTSystem
                     Console.WriteLine($"Robotarmen plockar order {lastOrderId}...");
                     Thread.Sleep(2000); // Simulera plockning
                     Console.WriteLine($"Order {lastOrderId} har blivit packad!");
-
-                    modbusServer.holdingRegisters[1] = (short)lastOrderId; // Skriv tillbaka orderId till register 1 som bekräftelse
                     messageReceived = false;
-
                 }
 
                 Thread.Sleep(1000);
@@ -42,18 +39,25 @@ namespace OTSystem
         {
             int port = 502;
 
-            ModbusServer modbusServer = new ModbusServer();
+            modbusServer = new ModbusServer();
             modbusServer.Port = port; // sätter portnumret
+
 
             modbusServer.HoldingRegistersChanged += (startAddress, numberOfRegisters) =>
             {
-                for (int i = 0; i < numberOfRegisters; i++)
-                {
-                    int orderId = modbusServer.holdingRegisters[startAddress + i];
-                    Console.WriteLine($"Order received via Modbus: Id={orderId}");
-                    lastOrderId = orderId;
-                    messageReceived = true;
-                }
+                //HÄR123 Console.WriteLine($"HoldingRegistersChanged fired! startAddress={startAddress}, numberOfRegisters={numberOfRegisters}"); //HÄR123
+                int orderId = modbusServer.holdingRegisters[startAddress];
+                if (orderId == 0)
+                    return;
+
+                Console.WriteLine($"Order received via Modbus: Id={orderId}");
+                lastOrderId = orderId;
+                messageReceived = true;
+
+
+                modbusServer.holdingRegisters[startAddress] = (short)orderId;
+                Console.WriteLine($"Bekräftelse skriven till register {startAddress}: {modbusServer.holdingRegisters[startAddress]}");
+
             };
             // --- Start the Modbus Server ---
             try

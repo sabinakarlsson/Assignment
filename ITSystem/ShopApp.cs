@@ -177,6 +177,7 @@ namespace ITSystem
                 });
 
                 Console.WriteLine("Ogiltigt användarnamn eller lösenord.");
+                Thread.Sleep(1500);
                 return null;
             }
 
@@ -311,17 +312,19 @@ namespace ITSystem
                     CompanyId = companyId,
                     CompanyName = companyName,
                     OrderDate = DateTime.Now,
-                    TotalAmount = totalAmount
+                    TotalAmount = totalAmount,
+                    SentToOT = false
                 };
 
                 await orderRepository.AddOrderAsync(newOrder);
+
 
                 foreach (var (product, _) in orderProducts)
                 {
                     await productRepository.UpdateProductAsync(product); //uppdaterar lagersaldo i databasen
                 }
 
-                Console.WriteLine("Ordern skapad!");
+                Console.WriteLine($"Ordern skapad!");
             }
 
             else

@@ -64,30 +64,43 @@ namespace IntegrationSystem
                         if (!_modbusClient.Connected)
                         {
                             _modbusClient.Connect();
+                            Console.WriteLine("Återansluten till Modbus-servern.");
+                        }
 
-                            _modbusClient.WriteSingleRegister(0, order.Id);
-                            Console.WriteLine($"Order {order.Id} skickad till OT-systemet!");
+                        Console.WriteLine($"Modbus-klient ansluten: {_modbusClient.Connected}");
 
-                            bool confirmed = false;
+                        Console.WriteLine($"Order att skicka: {order.Id}, SentToOT: {order.SentToOT}");
+                        _modbusClient.WriteSingleRegister(3, (short)order.Id);
+                        Console.WriteLine($"Order {order.Id} skickad till OT-systemet!");
 
-                            while (!confirmed)
+                        bool confirmed = false;
+
+                        while (!confirmed)
+                        {
+                            Thread.Sleep(1000); // Väntar 1 sekund innan nästa kontroll
+                            int[] response = _modbusClient.ReadHoldingRegisters(3, 1);
+                            int confirmedOrderId = response[0];
+
+
+                            // Lägg till denna rad för felsökning:
+                            Console.WriteLine($"Läste från register 1: {confirmedOrderId}");
+
+                            if (confirmedOrderId == order.Id)
                             {
-                                Thread.Sleep(1000); // Väntar 1 sekund innan nästa kontroll
-                                int[] response = _modbusClient.ReadHoldingRegisters(1, 1);
-                                int confirmedOrderId = response[0];
+                                Console.WriteLine($"Order {order.Id} bekräftad av OT-systemet.");
+                                order.SentToOT = true;
+                                _db.SaveChanges(); // Spara ändringen i databasen
+                                confirmed = true;
 
-                                if (confirmedOrderId == order.Id)
-                                {
-                                    Console.WriteLine($"Order {order.Id} bekräftad av OT-systemet.");
-                                    order.SentToOT = true;
-                                    confirmed = true;
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"Väntar på bekräftelse för order {order.Id}...");
-                                }
+                                // Nollställ register 1 efter bekräftelse
+                                _modbusClient.WriteSingleRegister(3, 0);
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Väntar på bekräftelse för order {order.Id}...");
                             }
                         }
+                        
                     }
                     catch (Exception ex)
                     {
@@ -96,8 +109,6 @@ namespace IntegrationSystem
                     }
 
                 }
-
-                _db.SaveChanges();
 
                 Thread.Sleep(2000); // Väntar 2 sekunder innan nästa kontroll
             }
